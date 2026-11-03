@@ -2,7 +2,7 @@
 
 from airflow.dag_processing.dagbag import DagBag
 
-EXPECTED_DAGS = {"extract_weather"}
+EXPECTED_DAGS = {"weather_pipeline"}
 
 bag = DagBag(dag_folder="/opt/airflow/dags")
 
