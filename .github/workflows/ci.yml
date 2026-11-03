@@ -61,3 +61,40 @@ jobs:
           count=$(psql -tAc "SELECT COUNT(*) FROM cities;")
           echo "cities: $count"
           test "$count" -eq 5
+
+  lint:
+    name: Python lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ruff
+        run: pip install "ruff>=0.5"
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Check formatting
+        run: ruff format --check .
+
+  airflow:
+    name: Airflow image and DAG imports
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Airflow image
+        run: docker build -f docker/airflow.Dockerfile -t weather-airflow:ci .
+
+      - name: Check DAGs import without errors
+        run: |
+          docker run --rm \
+            -e AIRFLOW__CORE__LOAD_EXAMPLES=false \
+            -v "$PWD/dags:/opt/airflow/dags:ro" \
+            -v "$PWD/scripts:/opt/airflow/scripts:ro" \
+            --entrypoint python \
+            weather-airflow:ci /opt/airflow/scripts/check_dag_imports.py
