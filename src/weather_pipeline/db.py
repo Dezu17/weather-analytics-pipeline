@@ -32,3 +32,15 @@ def get_city(conn: psycopg.Connection, city_name: str, country: str) -> dict:
     if row is None:
         raise LookupError(f"City not found in cities table: {city_name}, {country}")
     return row
+
+
+def get_active_cities(conn: psycopg.Connection) -> list[dict]:
+    """Return every city with is_active = TRUE, ordered by city_id."""
+    return conn.execute(
+        """
+        SELECT city_id, city_name, country, latitude, longitude, timezone
+        FROM cities
+        WHERE is_active
+        ORDER BY city_id
+        """
+    ).fetchall()
