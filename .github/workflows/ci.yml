@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  sql:
+    name: SQL scripts
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: weather_user
+          POSTGRES_PASSWORD: ci_password # throwaway, CI only
+          POSTGRES_DB: weather_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U weather_user -d weather_db"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      PGHOST: localhost
+      PGUSER: weather_user
+      PGPASSWORD: ci_password
+      PGDATABASE: weather_db
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply SQL scripts in order
+        run: |
+          for f in sql/*.sql; do
+            echo "Applying $f"
+            psql -v ON_ERROR_STOP=1 -q -f "$f"
+          done
+
+      - name: Re-apply SQL scripts (must be re-runnable)
+        run: |
+          for f in sql/*.sql; do
+            echo "Re-applying $f"
+            psql -v ON_ERROR_STOP=1 -q -f "$f"
+          done
+
+      - name: Check tables exist
+        run: |
+          for t in cities daily_weather; do
+            exists=$(psql -tAc "SELECT to_regclass('public.$t') IS NOT NULL;")
+            echo "$t exists: $exists"
+            test "$exists" = "t"
+          done
+
+      - name: Check seed data
+        run: |
+          count=$(psql -tAc "SELECT COUNT(*) FROM cities;")
+          echo "cities: $count"
+          test "$count" -eq 5
