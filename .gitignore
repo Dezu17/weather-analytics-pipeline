@@ -17,3 +17,6 @@ data/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Airflow task logs
+logs/
