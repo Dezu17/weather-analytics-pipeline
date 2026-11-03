@@ -1,4 +1,4 @@
-"""Manually triggered weather ETL for one city and date range: extract -> transform."""
+"""Manually triggered weather ETL for one city and date range: extract -> transform -> load."""
 
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -7,6 +7,7 @@ from airflow.sdk import Param, dag, task
 
 from weather_pipeline.db import get_city, get_connection
 from weather_pipeline.extract import extract
+from weather_pipeline.load import load
 from weather_pipeline.transform import transform
 
 
@@ -44,7 +45,14 @@ def weather_pipeline():
         print(f"Transformed {len(rows)} rows from {extracted['raw_path']}")
         return rows
 
-    transform_rows(extract_city())
+    @task(retries=2, retry_delay=timedelta(minutes=1))
+    def load_rows(rows: list[dict]) -> dict:
+        with get_connection() as conn:
+            counts = load(conn, rows)
+        print(f"Loaded into daily_weather: {counts}")
+        return counts
+
+    load_rows(transform_rows(extract_city()))
 
 
 weather_pipeline()
