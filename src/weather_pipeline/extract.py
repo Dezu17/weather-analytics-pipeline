@@ -38,7 +38,7 @@ def extract(city: dict, start_date: date, end_date: date) -> Path:
     if "daily" not in payload:
         raise ValueError(f"No 'daily' block in response for {city['city_name']}")
 
-    path = config.RAW_DATA_DIR / f"city_{city['city_id']}" / f"{start_date}_{end_date}.json"
+    path = config.RAW_DATA_DIR / f"{city['city_name']}_{city['country']}".lower() / f"{start_date}_{end_date}.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2))
     return path
