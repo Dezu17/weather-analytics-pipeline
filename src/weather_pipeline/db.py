@@ -14,6 +14,7 @@ def get_connection() -> psycopg.Connection:
         user=config.POSTGRES_USER,
         password=config.POSTGRES_PASSWORD,
         dbname=config.POSTGRES_DB,
+        connect_timeout=config.POSTGRES_CONNECT_TIMEOUT,
         row_factory=dict_row,
     )
 
